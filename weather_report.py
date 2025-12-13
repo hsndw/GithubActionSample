@@ -8,7 +8,11 @@ from datetime import date
 # 从测试号信息获取
 appID = os.environ.get("APP_ID")
 appSecret = os.environ.get("APP_SECRET")
-openId = os.environ.get("OPEN_ID")
+# 新增：配置多个收件人OpenID，用列表存储
+open_ids = [
+    os.environ.get("OPEN_ID_1"),  # 第一个收件人（原瑶瑶）
+    os.environ.get("OPEN_ID_2")   # 第二个收件人（新增）
+]
 weather_template_id = os.environ.get("TEMPLATE_ID")
 
 # 核心配置：START_DATE设为今天，初始天数67
@@ -99,12 +103,12 @@ def get_daily_love():
         print(f"获取情话失败：{e}")
         return "愿你今天事事顺心～"
 
-def send_weather(access_token, weather):
-    """发送微信模板消息，修复缩进并添加参数校验"""
+def send_weather(access_token, weather, open_id):
+    """修改：新增open_id参数，给单个收件人发送消息"""
     if not access_token or not weather or any(v is None for v in weather):
         print("参数异常，无法发送消息")
         return
-    if not openId or not weather_template_id:
+    if not open_id or not weather_template_id:
         print("OPEN_ID或TEMPLATE_ID未配置")
         return
     
@@ -114,7 +118,7 @@ def send_weather(access_token, weather):
 
     # 严格统一缩进，避免IndentationError
     body = {
-        "touser": openId.strip(),
+        "touser": open_id.strip(),  # 使用传入的单个open_id
         "template_id": weather_template_id.strip(),
         "url": "https://weixin.qq.com",
         "data": {
@@ -135,18 +139,20 @@ def send_weather(access_token, weather):
             headers={"Content-Type": "application/json"},
             timeout=10
         )
-        print(resp.text)
+        print(f"给{open_id}发送消息结果：{resp.text}")
     except Exception as e:
-        print(f"发送消息失败：{e}")
+        print(f"给{open_id}发送消息失败：{e}")
 
 def weather_report(this_city):
-    """主函数，添加流程校验"""
+    """修改：遍历所有收件人，逐个发送"""
     access_token = get_access_token()
     if not access_token:
         return
     weather = get_weather(this_city)
     print(f"天气信息： {weather}")
-    send_weather(access_token, weather)
+    # 遍历多个收件人OpenID
+    for open_id in open_ids:
+        send_weather(access_token, weather, open_id)
 
 if __name__ == '__main__':
     weather_report("芜湖")
