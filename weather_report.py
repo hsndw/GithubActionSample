@@ -12,7 +12,7 @@ openId = os.environ.get("OPEN_ID")
 weather_template_id = os.environ.get("TEMPLATE_ID")
 
 # 核心配置：修改为第67天对应的实际日期
-START_DATE = date(2025, 10, 8)
+START_DATE = date(2025, 12,13)
 INITIAL_DAYS = 67
 
 def get_days_together():
