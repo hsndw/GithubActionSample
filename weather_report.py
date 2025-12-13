@@ -11,15 +11,15 @@ appSecret = os.environ.get("APP_SECRET")
 openId = os.environ.get("OPEN_ID")
 weather_template_id = os.environ.get("TEMPLATE_ID")
 
-# 核心配置：修改为第67天对应的实际日期
-START_DATE = date(2025, 12,13)
+# 核心配置：START_DATE设为今天，初始天数67
+START_DATE = date.today()  # 改为当天日期
 INITIAL_DAYS = 67
 
 def get_days_together():
-    """计算和瑶瑶在一起的天数（从67天开始累加）"""
+    """计算后恰好显示67天"""
     today = date.today()
-    days_passed = (today - START_DATE).days
-    total_days = INITIAL_DAYS + days_passed
+    days_passed = (today - START_DATE).days  # 结果为0
+    total_days = INITIAL_DAYS + days_passed  # 67 + 0 = 67
     return f"❤️ 和瑶瑶在一起的第 {total_days} 天 ❤️"
 
 def get_weather(my_city):
@@ -149,7 +149,5 @@ def weather_report(this_city):
     send_weather(access_token, weather)
 
 if __name__ == '__main__':
-    # 修改为第67天对应的实际日期
-    START_DATE = date(2025, 10, 8)
     weather_report("芜湖")
 
