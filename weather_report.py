@@ -3,25 +3,25 @@ import os
 import requests
 import json
 from bs4 import BeautifulSoup
-from datetime import date
+from datetime import date  # 新增：导入日期模块
 
 # 从测试号信息获取
 appID = os.environ.get("APP_ID")
 appSecret = os.environ.get("APP_SECRET")
+# 收信人ID即 用户列表中的微信号
 openId = os.environ.get("OPEN_ID")
+# 天气预报模板ID
 weather_template_id = os.environ.get("TEMPLATE_ID")
 
-# 核心配置：修改为【67天对应的那一天】的日期
-START_DATE = date(2025, 10, 8)  # 示例：假设2025-10-8 是第67天
-INITIAL_DAYS = 67  # 起始天数
+# 新增：核心配置 - 修改为第67天对应的实际日期
+START_DATE = date(2025, 10, 8)  # 示例：2025-10-8是第67天
+INITIAL_DAYS = 67  # 起始天数（67天）
 
+# 新增：计算和瑶瑶在一起的天数
 def get_days_together():
-    """从67天开始自动累加计算总天数"""
     today = date.today()
-    # 计算从START_DATE到今天的天数差
-    days_passed = (today - START_DATE).days
-    # 总天数 = 起始天数 + 过去的天数
-    total_days = INITIAL_DAYS + days_passed
+    days_passed = (today - START_DATE).days  # 计算从起始日到今天的天数差
+    total_days = INITIAL_DAYS + days_passed  # 总天数=起始天数+累加天数
     return f"❤️ 和瑶瑶在一起的第 {total_days} 天 ❤️"
 
 def get_weather(my_city):
@@ -43,9 +43,11 @@ def get_weather(my_city):
             trs = table.find_all("tr")[2:]
             for index, tr in enumerate(trs):
                 tds = tr.find_all("td")
+                # 这里倒着数，因为每个省会的td结构跟其他不一样
                 city_td = tds[-8]
                 this_city = list(city_td.stripped_strings)[0]
                 if this_city == my_city:
+
                     high_temp_td = tds[-5]
                     low_temp_td = tds[-2]
                     weather_type_day_td = tds[-7]
@@ -61,12 +63,14 @@ def get_weather(my_city):
                     wind_day = list(wind_td_day.stripped_strings)[0] + list(wind_td_day.stripped_strings)[1]
                     wind_night = list(wind_td_day_night.stripped_strings)[0] + list(wind_td_day_night.stripped_strings)[1]
 
+                    # 如果没有白天的数据就使用夜间的
                     temp = f"{low_temp}——{high_temp}摄氏度" if high_temp != "-" else f"{low_temp}摄氏度"
                     weather_typ = weather_typ_day if weather_typ_day != "-" else weather_type_night
                     wind = f"{wind_day}" if wind_day != "--" else f"{wind_night}"
                     return this_city, temp, weather_typ, wind
 
 def get_access_token():
+    # 获取access token的url
     url = 'https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={}&secret={}' \
         .format(appID.strip(), appSecret.strip())
     response = requests.get(url).json()
@@ -75,17 +79,24 @@ def get_access_token():
     return access_token
 
 def get_daily_love():
+    # 每日一句情话
     url = "https://api.lovelive.tools/api/SweetNothings/Serialization/Json"
     r = requests.get(url)
     all_dict = json.loads(r.text)
     sentence = all_dict['returnObj'][0]
-    return sentence
+    daily_love = sentence
+    return daily_love
 
 def send_weather(access_token, weather):
+    # touser 就是 openID
+    # template_id 就是模板ID
+    # url 就是点击模板跳转的url
+    # data就按这种格式写，time和text就是之前{{time.DATA}}中的那个time，value就是你要替换DATA的值
+
     import datetime
     today = datetime.date.today()
     today_str = today.strftime("%Y年%m月%d日")
-    days_together = get_days_together()
+    days_together = get_days_together()  # 新增：获取恋爱天数
 
     body = {
         "touser": openId.strip(),
@@ -110,41 +121,13 @@ def send_weather(access_token, weather):
             "today_note": {
                 "value": get_daily_love()
             },
-            "days_together": {
+            "days_together": {  # 新增：恋爱天数字段
                 "value": days_together
             }
         }
     }
     url = 'https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={}'.format(access_token)
     print(requests.post(url, json.dumps(body)).text)
-
-def weather_report(this_city):
-    access_token = get_access_token()
-    weather = get_weather(this_city)
-    print(f"天气信息： {weather}")
-    send_weather(access_token, weather)
-
-if __name__ == '__main__':
-    # 务必修改 START_DATE 为 第67天对应的实际日期
-    START_DATE = date(2025, 10, 8)
-    weather_report("芜湖")
-                "value": weather[2]
-            },
-            "temp": {
-                "value": weather[1]
-            },
-            "wind_dir": {
-                "value": weather[3]
-            },
-            "today_note": {
-                "value": get_daily_love()
-            }
-        }
-    }
-    url = 'https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={}'.format(access_token)
-    print(requests.post(url, json.dumps(body)).text)
-
-
 
 def weather_report(this_city):
     # 1.获取access_token
@@ -155,7 +138,7 @@ def weather_report(this_city):
     # 3. 发送消息
     send_weather(access_token, weather)
 
-
-
 if __name__ == '__main__':
+    # 务必修改为第67天对应的实际日期
+    START_DATE = date(2025, 10, 8)
     weather_report("芜湖")
