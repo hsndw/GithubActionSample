@@ -1,12 +1,8 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
-
 name: 天气预报推送
 
 on:
   schedule:
-    # 设置启动时间，为 UTC 时间, UTC23点 对应北京时间早7点
-    - cron: '0 23 * * *'  # 修复：去掉冒号后空格，00简化为0
+    - cron: '0 23 * * *'  # UTC23点=北京时间7点
   workflow_dispatch:
 
 permissions:
@@ -18,20 +14,20 @@ jobs:
     env:
       TZ: Asia/Shanghai
     steps:
-    - uses: actions/checkout@v4  # 升级为最新版
-    - name: Set up Python 3.12
-      uses: actions/setup-python@v5  # 升级为最新版
-      with:
-        python-version: "3.12"
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install requests html5lib bs4 schedule  # 直接安装所需依赖
-    - name: Run weather Report
-      run: |
-        python weather_report.py
-      env:
-        APP_ID: ${{ secrets.APP_ID }}
-        APP_SECRET: ${{ secrets.APP_SECRET }}
-        OPEN_ID: ${{ secrets.OPEN_ID }}
-        TEMPLATE_ID: ${{ secrets.TEMPLATE_ID }}
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests html5lib bs4 schedule
+      - name: Run weather Report
+        run: python weather_report.py
+        env:
+          APP_ID: ${{ secrets.APP_ID }}
+          APP_SECRET: ${{ secrets.APP_SECRET }}
+          OPEN_ID_1: ${{ secrets.OPEN_ID_1 }}
+          OPEN_ID_2: ${{ secrets.OPEN_ID_2 }}
+          TEMPLATE_ID: ${{ secrets.TEMPLATE_ID }}
