@@ -1,30 +1,46 @@
+# 天气预报推送工作流配置
 name: 天气预报推送
 
+# 触发规则：每天UTC23点（北京时间7点）定时触发 + 手动触发
 on:
   schedule:
-    - cron: '0 23 * * *'  # UTC23点=北京时间7点
-  workflow_dispatch:
+    - cron: '0 23 * * *'  # UTC时间23:00 = 北京时间07:00
+  workflow_dispatch:  # 允许手动触发
 
+# 权限配置：仅读取仓库内容
 permissions:
   contents: read
 
+# 任务配置
 jobs:
   build:
+    # 运行环境：最新版Ubuntu
     runs-on: ubuntu-latest
+    # 环境变量：设置时区为上海
     env:
       TZ: Asia/Shanghai
+    # 步骤列表
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python 3.12
+      # 步骤1：拉取仓库代码
+      - name: 拉取仓库代码
+        uses: actions/checkout@v4
+
+      # 步骤2：配置Python 3.12环境
+      - name: 设置Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install dependencies
+
+      # 步骤3：安装依赖包
+      - name: 安装依赖
         run: |
           python -m pip install --upgrade pip
           pip install requests html5lib bs4 schedule
-      - name: Run weather Report
+
+      # 步骤4：运行Python推送脚本
+      - name: 执行天气预报推送
         run: python weather_report.py
+        # 传递环境变量（Secrets引用无空格，格式正确）
         env:
           APP_ID: ${{ secrets.APP_ID }}
           APP_SECRET: ${{ secrets.APP_SECRET }}
