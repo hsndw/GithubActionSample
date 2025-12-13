@@ -8,26 +8,22 @@ from datetime import date
 # 从测试号信息获取
 appID = os.environ.get("APP_ID")
 appSecret = os.environ.get("APP_SECRET")
-# 新增：配置多个收件人OpenID，用列表存储
 open_ids = [
-    os.environ.get("OPEN_ID_1"),  # 第一个收件人（原瑶瑶）
-    os.environ.get("OPEN_ID_2")   # 第二个收件人（新增）
+    os.environ.get("OPEN_ID_1"),
+    os.environ.get("OPEN_ID_2")
 ]
 weather_template_id = os.environ.get("TEMPLATE_ID")
 
-# 核心配置：START_DATE设为今天，初始天数67
-START_DATE = date.today()  # 改为当天日期
+START_DATE = date.today()
 INITIAL_DAYS = 67
 
 def get_days_together():
-    """计算后恰好显示67天"""
     today = date.today()
-    days_passed = (today - START_DATE).days  # 结果为0
-    total_days = INITIAL_DAYS + days_passed  # 67 + 0 = 67
+    days_passed = (today - START_DATE).days
+    total_days = INITIAL_DAYS + days_passed
     return f"❤️ 和瑶瑶在一起的第 {total_days} 天 ❤️"
 
 def get_weather(my_city):
-    """爬取天气数据，添加请求头和异常处理"""
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
@@ -58,7 +54,6 @@ def get_weather(my_city):
                     city_td = tds[-8]
                     this_city = list(city_td.stripped_strings)[0] if city_td.stripped_strings else ""
                     if this_city == my_city:
-                        # 提取天气数据并做空值处理
                         high_temp = list(tds[-5].stripped_strings)[0] if tds[-5].stripped_strings else "-"
                         low_temp = list(tds[-2].stripped_strings)[0] if tds[-2].stripped_strings else "-"
                         weather_typ_day = list(tds[-7].stripped_strings)[0] if tds[-7].stripped_strings else "-"
@@ -69,7 +64,6 @@ def get_weather(my_city):
                         wind_night_parts = list(tds[-3].stripped_strings)
                         wind_night = "".join(wind_night_parts[:2]) if wind_night_parts else "--"
 
-                        # 数据整合
                         temp = f"{low_temp}——{high_temp}摄氏度" if high_temp != "-" else f"{low_temp}摄氏度"
                         weather_typ = weather_typ_day if weather_typ_day != "-" else weather_type_night
                         wind = wind_day if wind_day != "--" else wind_night
@@ -80,21 +74,22 @@ def get_weather(my_city):
     return None, None, None, None
 
 def get_access_token():
-    """获取微信access_token，添加异常处理"""
     if not appID or not appSecret:
-        print("APP_ID或APP_SECRET未配置")
+        print("❌ APP_ID或APP_SECRET未配置")
         return None
     try:
         url = f"https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={appID.strip()}&secret={appSecret.strip()}"
         response = requests.get(url, timeout=10).json()
-        print(response)
+        if "errcode" in response and response["errcode"] != 0:
+            print(f"❌ 获取token失败：{response['errmsg']}")
+            return None
+        print("✅ 获取token成功")
         return response.get('access_token')
     except Exception as e:
-        print(f"获取access_token失败：{e}")
+        print(f"❌ 获取access_token异常：{e}")
         return None
 
 def get_daily_love():
-    """获取每日情话，添加异常处理"""
     try:
         url = "https://api.lovelive.tools/api/SweetNothings/Serialization/Json"
         r = requests.get(url, timeout=10)
@@ -104,21 +99,25 @@ def get_daily_love():
         return "愿你今天事事顺心～"
 
 def send_weather(access_token, weather, open_id):
-    """修改：新增open_id参数，给单个收件人发送消息"""
-    if not access_token or not weather or any(v is None for v in weather):
-        print("参数异常，无法发送消息")
+    if not access_token:
+        print("❌ 无有效access_token，跳过发送")
         return
-    if not open_id or not weather_template_id:
-        print("OPEN_ID或TEMPLATE_ID未配置")
+    if not weather or any(v is None for v in weather):
+        print("❌ 天气数据获取失败，跳过发送")
+        return
+    if not open_id:
+        print("❌ OpenID为空，跳过发送")
+        return
+    if not weather_template_id:
+        print("❌ TEMPLATE_ID未配置，跳过发送")
         return
     
     today = date.today()
     today_str = today.strftime("%Y年%m月%d日")
     days_together = get_days_together()
 
-    # 严格统一缩进，避免IndentationError
     body = {
-        "touser": open_id.strip(),  # 使用传入的单个open_id
+        "touser": open_id.strip(),
         "template_id": weather_template_id.strip(),
         "url": "https://weixin.qq.com",
         "data": {
@@ -139,21 +138,29 @@ def send_weather(access_token, weather, open_id):
             headers={"Content-Type": "application/json"},
             timeout=10
         )
-        print(f"给{open_id}发送消息结果：{resp.text}")
+        resp_json = resp.json()
+        print(f"给{open_id[:8]}****发送消息结果：{resp_json}")
+        # 解析微信接口返回码
+        if resp_json.get("errcode") == 0:
+            print(f"✅ 消息已成功发送至微信服务器，若未收到请检查：1.用户是否关注测试号 2.服务通知是否有消息")
+        elif resp_json.get("errcode") == 40003:
+            print(f"❌ OpenID {open_id[:8]}****无效，请核对是否为测试号关注用户的OpenID")
+        elif resp_json.get("errcode") == 40037:
+            print(f"❌ TEMPLATE_ID无效，请核对测试号中的模板ID")
     except Exception as e:
-        print(f"给{open_id}发送消息失败：{e}")
+        print(f"❌ 给{open_id[:8]}****发送消息异常：{e}")
 
 def weather_report(this_city):
-    """修改：遍历所有收件人，逐个发送"""
     access_token = get_access_token()
-    if not access_token:
-        return
     weather = get_weather(this_city)
-    print(f"天气信息： {weather}")
-    # 遍历多个收件人OpenID
-    for open_id in open_ids:
+    print(f"天气信息：{weather}")
+    # 过滤空的OpenID
+    valid_open_ids = [oid for oid in open_ids if oid]
+    if not valid_open_ids:
+        print("❌ 无有效的OpenID，取消发送")
+        return
+    for open_id in valid_open_ids:
         send_weather(access_token, weather, open_id)
 
 if __name__ == '__main__':
     weather_report("芜湖")
-
