@@ -5,25 +5,36 @@ import json
 from bs4 import BeautifulSoup
 from datetime import date
 
-# 从测试号信息获取
-appID = os.environ.get("APP_ID")
-appSecret = os.environ.get("APP_SECRET")
-open_ids = [
-    os.environ.get("OPEN_ID_1"),
-    os.environ.get("OPEN_ID_2")
-]
-weather_template_id = os.environ.get("TEMPLATE_ID")
+# 从环境变量读取配置，并添加读取失败的提示
+def get_env_var(var_name):
+    """获取环境变量，若不存在则打印提示并返回None"""
+    value = os.environ.get(var_name)
+    if not value:
+        print(f"❌ 环境变量{var_name}未配置或读取失败")
+    return value
 
+# 从测试号信息获取
+appID = get_env_var("APP_ID")
+appSecret = get_env_var("APP_SECRET")
+OPEN_ID_1 = get_env_var("OPEN_ID_1")
+OPEN_ID_2 = get_env_var("OPEN_ID_2")
+# 配置多个收件人OpenID，过滤空值
+open_ids = [oid for oid in [OPEN_ID_1, OPEN_ID_2] if oid]
+weather_template_id = get_env_var("TEMPLATE_ID")
+
+# 核心配置：START_DATE设为今天，初始天数67
 START_DATE = date.today()
 INITIAL_DAYS = 67
 
 def get_days_together():
+    """计算恋爱天数"""
     today = date.today()
     days_passed = (today - START_DATE).days
     total_days = INITIAL_DAYS + days_passed
     return f"❤️ 和瑶瑶在一起的第 {total_days} 天 ❤️"
 
 def get_weather(my_city):
+    """爬取天气数据，添加请求头和异常处理"""
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
@@ -74,8 +85,9 @@ def get_weather(my_city):
     return None, None, None, None
 
 def get_access_token():
+    """获取微信access_token，添加异常处理"""
     if not appID or not appSecret:
-        print("❌ APP_ID或APP_SECRET未配置")
+        print("❌ APP_ID或APP_SECRET未配置，无法获取token")
         return None
     try:
         url = f"https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={appID.strip()}&secret={appSecret.strip()}"
@@ -90,6 +102,7 @@ def get_access_token():
         return None
 
 def get_daily_love():
+    """获取每日情话，添加异常处理"""
     try:
         url = "https://api.lovelive.tools/api/SweetNothings/Serialization/Json"
         r = requests.get(url, timeout=10)
@@ -99,6 +112,7 @@ def get_daily_love():
         return "愿你今天事事顺心～"
 
 def send_weather(access_token, weather, open_id):
+    """给单个收件人发送模板消息"""
     if not access_token:
         print("❌ 无有效access_token，跳过发送")
         return
@@ -151,16 +165,20 @@ def send_weather(access_token, weather, open_id):
         print(f"❌ 给{open_id[:8]}****发送消息异常：{e}")
 
 def weather_report(this_city):
+    """主函数：获取数据并遍历收件人发送"""
+    # 打印已读取的有效OpenID，方便调试
+    print(f"📌 读取到的有效OpenID数量：{len(open_ids)}")
+    if len(open_ids) == 0:
+        print("❌ 未配置任何有效OpenID，请检查GitHub Secrets中的OPEN_ID_1/OPEN_ID_2")
+        return
+    
     access_token = get_access_token()
     weather = get_weather(this_city)
-    print(f"天气信息：{weather}")
-    # 过滤空的OpenID
-    valid_open_ids = [oid for oid in open_ids if oid]
-    if not valid_open_ids:
-        print("❌ 无有效的OpenID，取消发送")
-        return
-    for open_id in valid_open_ids:
+    print(f"📌 天气信息：{weather}")
+    
+    for open_id in open_ids:
         send_weather(access_token, weather, open_id)
 
 if __name__ == '__main__':
     weather_report("芜湖")
+
