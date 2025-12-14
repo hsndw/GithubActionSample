@@ -22,9 +22,11 @@ OPEN_ID_2 = get_env_var("OPEN_ID_2")
 open_ids = [oid for oid in [OPEN_ID_1, OPEN_ID_2] if oid]
 weather_template_id = get_env_var("TEMPLATE_ID")
 
-# 核心配置：START_DATE设为今天，初始天数67
-START_DATE = date.today()
-INITIAL_DAYS = 67
+# 核心配置：改为真实恋爱起始日期（根据昨天是第67天反推），INITIAL_DAYS设为0
+# 假设昨天是2025-12-13且是第67天，起始日期就是 2025-12-13 往前推67天 = 2025-10-07
+# 你需要根据实际情况替换这个日期！
+START_DATE = date(2025, 10, 7)
+INITIAL_DAYS = 0
 
 def get_days_together():
     """计算恋爱天数"""
