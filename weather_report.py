@@ -125,4 +125,61 @@ def send_weather(access_token, weather, open_id):
         print("❌ OpenID为空，跳过发送")
         return
     if not weather_template_id:
-        pr
+        print("❌ TEMPLATE_ID未配置，跳过发送")
+        return
+    
+    today = date.today()
+    today_str = today.strftime("%Y年%m月%d日")
+    days_together = get_days_together()
+
+    body = {
+        "touser": open_id.strip(),
+        "template_id": weather_template_id.strip(),
+        "url": "https://weixin.qq.com",
+        "data": {
+            "date": {"value": today_str},
+            "region": {"value": weather[0]},
+            "weather": {"value": weather[2]},
+            "temp": {"value": weather[1]},
+            "wind_dir": {"value": weather[3]},
+            "today_note": {"value": get_daily_love()},
+            "days_together": {"value": days_together}
+        }
+    }
+    try:
+        url = f"https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={access_token}"
+        resp = requests.post(
+            url, 
+            data=json.dumps(body, ensure_ascii=False).encode('utf-8'),
+            headers={"Content-Type": "application/json"},
+            timeout=10
+        )
+        resp_json = resp.json()
+        print(f"给{open_id[:8]}****发送消息结果：{resp_json}")
+        # 解析微信接口返回码
+        if resp_json.get("errcode") == 0:
+            print(f"✅ 消息已成功发送至微信服务器，若未收到请检查：1.用户是否关注测试号 2.服务通知是否有消息")
+        elif resp_json.get("errcode") == 40003:
+            print(f"❌ OpenID {open_id[:8]}****无效，请核对是否为测试号关注用户的OpenID")
+        elif resp_json.get("errcode") == 40037:
+            print(f"❌ TEMPLATE_ID无效，请核对测试号中的模板ID")
+    except Exception as e:
+        print(f"❌ 给{open_id[:8]}****发送消息异常：{e}")
+
+def weather_report(this_city):
+    """主函数：获取数据并遍历收件人发送"""
+    # 打印已读取的有效OpenID，方便调试
+    print(f"📌 读取到的有效OpenID数量：{len(open_ids)}")
+    if len(open_ids) == 0:
+        print("❌ 未配置任何有效OpenID，请检查GitHub Secrets中的OPEN_ID_1/OPEN_ID_2")
+        return
+    
+    access_token = get_access_token()
+    weather = get_weather(this_city)
+    print(f"📌 天气信息：{weather}")
+    
+    for open_id in open_ids:
+        send_weather(access_token, weather, open_id)
+
+if __name__ == '__main__':
+    weather_report("芜湖")
