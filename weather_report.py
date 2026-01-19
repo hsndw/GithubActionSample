@@ -7,38 +7,13 @@ from datetime import date
 
 # 从环境变量读取配置，并添加读取失败的提示
 def get_env_var(var_name):
-    """获取环境变量，若不存在则打印提示并返回None"""
-    value = os.environ.get(var_name)
-    if not value:
-        print(f"❌ 环境变量{var_name}未配置或读取失败")
-    return value
-
-# 从测试号信息获取
-appID = get_env_var("APP_ID")
-appSecret = get_env_var("APP_SECRET")
-OPEN_ID_1 = get_env_var("OPEN_ID_1")
-OPEN_ID_2 = get_env_var("OPEN_ID_2")
-# 配置多个收件人OpenID，过滤空值
-open_ids = [oid for oid in [OPEN_ID_1, OPEN_ID_2] if oid]
-weather_template_id = get_env_var("TEMPLATE_ID")
-
-# 核心配置：改为真实恋爱起始日期（根据昨天是第67天反推），INITIAL_DAYS设为0
-# 假设昨天是2025-12-13且是第67天，起始日期就是 2025-12-13 往前推67天 = 2025-10-07
-# 你需要根据实际情况替换这个日期！
-START_DATE = date(2025, 10, 7)
+    """获取
+        print(
 INITIAL_DAYS = 0
 
 def get_days_together():
     """计算恋爱天数"""
-    today = date.today()
-    days_passed = (today - START_DATE).days
-    total_days = INITIAL_DAYS + days_passed
-    return f"❤️ 和瑶瑶在一起的第 {total_days} 天 ❤️"
-
-def get_weather(my_city):
-    """爬取天气数据，添加请求头和异常处理"""
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    today = date.today() Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
     urls = [
         "http://www.weather.com.cn/textFC/hb.shtml",
