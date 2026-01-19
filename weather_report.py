@@ -104,14 +104,9 @@ def get_access_token():
         return None
 
 def get_daily_love():
-    """获取每日情话，添加异常处理"""
-    try:
-        url = "https://api.lovelive.tools/api/SweetNothings/Serialization/Json"
-        r = requests.get(url, timeout=10)
-        return json.loads(r.text)['returnObj'][0]
-    except Exception as e:
-        print(f"获取情话失败：{e}")
-        return "愿你今天事事顺心～"
+    """固定自定义文字，不再调用情话接口"""
+    # 这里可以直接修改引号内的内容为你想要的文案
+    return "很喜欢！很短暂！很遗憾！"
 
 def send_weather(access_token, weather, open_id):
     """给单个收件人发送模板消息"""
